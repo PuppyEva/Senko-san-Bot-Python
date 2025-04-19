@@ -1,0 +1,70 @@
+	async def danImageFunction(self, ctx, apiLinks):
+		#Basic variables for conditionals
+		pages = 4
+		currentpage = 0
+		#Embed
+		embed = discord.Embed(
+			color = 0xf39800
+		)
+		embed.set_image(
+			url = apiLinks[currentpage]["large_file_url"]
+		)
+		embed.set_author(
+			name=apiLinks[currentpage]['id'],
+			icon_url=self.client.user.avatar_url
+		)			
+		embed.set_footer(
+			text=f"Requested by {ctx.author.name} | Page {currentpage + 1} / {pages + 1}",
+			icon_url = ctx.author.avatar_url
+		)
+
+		message = await ctx.send(embed=embed)
+		await message.add_reaction('⬅️')
+		await message.add_reaction('➡️')
+
+		def check(reaction, user):
+			return user == ctx.author and reaction.message.id == message.id and str(reaction.emoji) in ['⬅️', '➡️']
+			#Only requester is able to scroll and prevents dupes from clashing
+
+		while True:
+			try:
+				reaction, user = await self.client.wait_for('reaction_add', timeout=25, check=check)
+				if str(reaction.emoji) == '⬅️' and currentpage > 0:
+					currentpage -= 1
+					#Updates embed
+					url = apiLinks[currentpage]["large_file_url"]
+					embed.set_image(
+						url = url
+					)
+					embed.set_author(
+						name=apiLinks[currentpage]['id'],
+						icon_url=self.client.user.avatar_url
+					)
+					embed.set_footer(
+						text=f"Requested by {ctx.author.name} | Page {currentpage + 1} / {pages + 1}",
+						icon_url = ctx.author.avatar_url
+					)
+					await message.edit(embed=embed)
+					await message.remove_reaction(reaction, user)
+				elif str(reaction.emoji) == '➡️' and currentpage != pages:
+					currentpage += 1
+					#Updates embed
+					url = apiLinks[currentpage]["large_file_url"]
+					embed.set_image(
+						url = url
+					)
+					embed.set_author(
+						name=apiLinks[currentpage]['id'],
+						icon_url=self.client.user.avatar_url
+					)
+					embed.set_footer(
+						text=f"Requested by {ctx.author.name} | Page {currentpage + 1} / {pages + 1}",
+						icon_url = ctx.author.avatar_url
+					)
+					await message.edit(embed=embed)
+					await message.remove_reaction(reaction, user)
+				else:
+					await message.remove_reaction(reaction, user)
+			except asyncio.TimeoutError:
+				#Timeout at 25 seconds
+				break
